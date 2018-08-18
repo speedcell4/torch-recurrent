@@ -1,1 +1,2 @@
-from torch_recurrent.lstm_cell import LSTMCell
+from .lstm_cell import LSTMCell
+from .lstm import LSTM
