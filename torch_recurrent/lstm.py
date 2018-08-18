@@ -1,10 +1,12 @@
-from typing import Tuple
+from typing import Tuple, Union
 
+from torch.nn.utils.rnn import PackedSequence
 import torch
 from torch import nn
 
 from torch_recurrent import keras_lstm_
 
+IO = Union[torch.Tensor, PackedSequence]
 HX = Tuple[torch.Tensor, torch.Tensor]
 
 
@@ -19,6 +21,7 @@ class LSTM(nn.LSTM):
         )
 
         self.num_directions = 2 if bidirectional else 1
+        self.output_dim = hidden_size * self.num_directions
         self.h0 = nn.Parameter(torch.Tensor(num_layers * self.num_directions, 1, hidden_size))
         self.c0 = nn.Parameter(torch.Tensor(num_layers * self.num_directions, 1, hidden_size))
 
@@ -32,18 +35,18 @@ class LSTM(nn.LSTM):
         c0 = self.c0.expand(-1, batch_size, -1)
         return h0, c0
 
-    def forward(self, input: torch.Tensor, hx: HX = None) -> Tuple[torch.Tensor, HX]:
+    def forward(self, input: IO, hx: HX = None) -> Tuple[IO, HX]:
         if hx is None:
             hx = self.hx(input.size(0))
         return super(LSTM, self).forward(input, hx)
 
-    def reduce(self, input: torch.Tensor) -> torch.Tensor:
-        assert self.bidirectional
+    def reduce(self, input: IO) -> IO:
         output, _ = self.__call__(input, None)
         output = output.view(input.size(0), -1, self.num_directions, self.hidden_size)
+        if self.num_directions == 1:
+            return output[:, -1, 0, :]
         return torch.cat([output[:, -1, 0, :], output[:, 0, -1, :]], dim=-1)
 
-    def transduce(self, input: torch.Tensor) -> torch.Tensor:
-        assert self.bidirectional
+    def transduce(self, input: IO) -> IO:
         output, _ = self.__call__(input, None)
         return output

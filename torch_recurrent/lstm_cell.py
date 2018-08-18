@@ -1,8 +1,8 @@
 from typing import Callable, Tuple
 
 import torch
-from torch.nn import init
 from torch import nn
+
 from torch_recurrent import keras_lstm_
 
 HX = Tuple[torch.Tensor, torch.Tensor]
@@ -28,6 +28,7 @@ class LSTMCell(nn.LSTMCell):
         super(LSTMCell, self).__init__(
             input_size=input_size, hidden_size=hidden_size, bias=bias,
         )
+        self.output_dim = hidden_size
         self.h0 = nn.Parameter(torch.Tensor(1, hidden_size))
         self.c0 = nn.Parameter(torch.Tensor(1, hidden_size))
 
