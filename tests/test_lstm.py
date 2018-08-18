@@ -1,24 +1,22 @@
+from hypothesis import given
 import torch
-from hypothesis import given, strategies as st
+from torch.nn.utils.rnn import pack_sequence
 
+from tests import *
 from torch_recurrent import LSTM
-
-hyper = dict(
-    seqlen=st.integers(20, 50),
-    batch=st.integers(1, 20),
-    input_size=st.integers(20, 50),
-    hidden_size=st.integers(20, 50),
-    bias=st.booleans(),
-    num_layers=st.integers(1, 3),
-    dropout=st.floats(0., 1.),
-)
 
 
 @given(
-    bidirectional=st.booleans(),
-    **hyper,
+    seq_len=SEQ_LEN,
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+    num_layers=NUM_LAYERS,
+    dropout=DROPOUT,
+    bidirectional=BIDIRECTIONAL,
 )
-def test_lstm(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
     num_directions = 2 if bidirectional else 1
@@ -26,53 +24,94 @@ def test_lstm(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout,
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
-    inputs = torch.rand(batch, seqlen, input_size)
+    inputs = torch.rand(batch, seq_len, input_size)
     outputs, (h_n, c_n) = rnn(inputs)
 
-    assert outputs.size() == (batch, seqlen, rnn.output_dim)
+    assert outputs.size() == (batch, seq_len, rnn.output_dim)
     assert h_n.size() == (num_layers * num_directions, batch, hidden_size)
     assert c_n.size() == (num_layers * num_directions, batch, hidden_size)
 
 
 @given(
-    bidirectional=st.booleans(),
-    **hyper,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+    num_layers=NUM_LAYERS,
+    dropout=DROPOUT,
+    bidirectional=BIDIRECTIONAL,
+    seq_lens=SORTED_SEQ_LENS,
 )
-def test_lstm_reduce(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm_reduce_with_pack(
+        input_size, hidden_size, bias, num_layers, dropout, bidirectional, seq_lens):
     if num_layers == 1:
         dropout = 0
+    batch = len(seq_lens)
 
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
-
-    inputs = torch.rand(batch, seqlen, input_size)
+    inputs = pack_sequence([torch.rand(seq_len, input_size) for seq_len in seq_lens])
     outputs = rnn.reduce(inputs)
 
     assert outputs.size() == (batch, rnn.output_dim)
 
 
 @given(
-    bidirectional=st.booleans(),
-    **hyper,
+    seq_len=SEQ_LEN,
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+    num_layers=NUM_LAYERS,
+    dropout=DROPOUT,
+    bidirectional=BIDIRECTIONAL,
 )
-def test_lstm_transduce(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm_reduce(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
 
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
-    inputs = torch.rand(batch, seqlen, input_size)
-    outputs = rnn.transduce(inputs)
+    inputs = torch.rand(batch, seq_len, input_size)
+    outputs = rnn.reduce(inputs)
 
-    assert outputs.size() == (batch, seqlen, rnn.output_dim)
+    assert outputs.size() == (batch, rnn.output_dim)
 
 
 @given(
-    **hyper,
-    bidirectional=st.booleans(),
+    seq_len=SEQ_LEN,
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+    num_layers=NUM_LAYERS,
+    dropout=DROPOUT,
+    bidirectional=BIDIRECTIONAL,
 )
-def test_lstm_with_hx(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm_transduce(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+    if num_layers == 1:
+        dropout = 0
+
+    rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
+               batch_first=True, dropout=dropout, bidirectional=bidirectional)
+
+    inputs = torch.rand(batch, seq_len, input_size)
+    outputs = rnn.transduce(inputs)
+
+    assert outputs.size() == (batch, seq_len, rnn.output_dim)
+
+
+@given(
+    seq_len=SEQ_LEN,
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+    num_layers=NUM_LAYERS,
+    dropout=DROPOUT,
+    bidirectional=BIDIRECTIONAL,
+)
+def test_lstm_with_hx(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
     num_directions = 2 if bidirectional else 1
@@ -80,11 +119,11 @@ def test_lstm_with_hx(seqlen, batch, input_size, hidden_size, bias, num_layers, 
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
-    inputs = torch.rand(batch, seqlen, input_size)
+    inputs = torch.rand(batch, seq_len, input_size)
     h_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
     c_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
     outputs, (h_n, c_n) = rnn(inputs, (h_0, c_0))
 
-    assert outputs.size() == (batch, seqlen, rnn.output_dim)
+    assert outputs.size() == (batch, seq_len, rnn.output_dim)
     assert h_n.size() == (num_layers * num_directions, batch, hidden_size)
     assert c_n.size() == (num_layers * num_directions, batch, hidden_size)
