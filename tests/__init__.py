@@ -15,3 +15,7 @@ BIDIRECTIONAL = st.booleans()
 
 SEQ_LENS = st.lists(SEQ_LEN, min_size=1, max_size=20)
 SORTED_SEQ_LENS = SEQ_LENS.map(sorted).map(reversed).map(list)
+
+WORD = st.integers(0, 1200)
+SEQUENCE = st.lists(WORD, min_size=1, max_size=50)
+SEQUENCES = st.lists(SEQUENCE, min_size=1, max_size=20)
