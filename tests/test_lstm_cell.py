@@ -1,17 +1,16 @@
 import torch
-from hypothesis import given, strategies as st
+from hypothesis import given
 
 from torch_recurrent.lstm_cell import LSTMCell
+from tests import *
 
-hyper = dict(
-    batch=st.integers(1, 20),
-    input_size=st.integers(20, 50),
-    hidden_size=st.integers(20, 50),
-    bias=st.booleans(),
+
+@given(
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
 )
-
-
-@given(**hyper)
 def test_lstm_cell(batch, input_size, hidden_size, bias):
     cell = LSTMCell(input_size=input_size, hidden_size=hidden_size, bias=bias)
     inputs = torch.rand(batch, input_size)
@@ -20,7 +19,12 @@ def test_lstm_cell(batch, input_size, hidden_size, bias):
     assert ct.size() == (batch, hidden_size)
 
 
-@given(**hyper)
+@given(
+    batch=BATCH,
+    input_size=INPUT_SIZE,
+    hidden_size=HIDDEN_SIZE,
+    bias=BIAS,
+)
 def test_lstm_cell_with_hx(batch, input_size, hidden_size, bias):
     cell = LSTMCell(input_size=input_size, hidden_size=hidden_size, bias=bias)
     inputs = torch.rand(batch, input_size)
