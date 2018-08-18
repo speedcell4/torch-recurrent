@@ -1,7 +1,7 @@
 import torch
 from hypothesis import given, strategies as st
 
-from torch_recurrent.lstm import LSTMCell
+from torch_recurrent.lstm_cell import LSTMCell
 
 hyper = dict(
     batch=st.integers(1, 20),

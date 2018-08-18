@@ -1,8 +1,25 @@
-from typing import Tuple
+from typing import Callable, Tuple
 
 import torch
 from torch.nn import init
 from torch import nn
+
+HX = Tuple[torch.Tensor, torch.Tensor]
+
+
+class Statue(object):
+    def __init__(self, hx: HX, forward: Callable[[torch.Tensor, HX], HX]) -> None:
+        super(Statue, self).__init__()
+        self.hx = hx
+        self.forward = forward
+
+    @property
+    def output(self) -> torch.Tensor:
+        return self.hx[0]
+
+    def __call__(self, x: torch.Tensor) -> 'Statue':
+        hx = self.forward(x, self.hx)
+        return Statue(hx, self.forward)
 
 
 class LSTMCell(nn.LSTMCell):
@@ -31,9 +48,16 @@ class LSTMCell(nn.LSTMCell):
             if getattr(self, 'c0', None) is not None:
                 init.uniform_(self.c0, -std, +std)
 
-    def forward(self, input, hx=None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def hx(self, batch_size: int) -> HX:
+        h0 = self.h0.expand(batch_size, -1)
+        c0 = self.c0.expand(batch_size, -1)
+        return h0, c0
+
+    @property
+    def statue(self) -> 'Statue':
+        return Statue(self.hx(1), self.__call__)
+
+    def forward(self, input: torch.Tensor, hx: HX = None) -> HX:
         if hx is None:
-            h0 = self.h0.expand(input.size(0), -1)
-            c0 = self.c0.expand(input.size(0), -1)
-            hx = (h0, c0)
+            hx = self.hx(input.size(0))
         return super(LSTMCell, self).forward(input=input, hx=hx)
