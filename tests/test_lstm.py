@@ -11,11 +11,13 @@ hyper = dict(
     bias=st.booleans(),
     num_layers=st.integers(1, 3),
     dropout=st.floats(0., 1.),
-    bidirectional=st.booleans(),
 )
 
 
-@given(**hyper)
+@given(
+    bidirectional=st.booleans(),
+    **hyper,
+)
 def test_lstm(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
@@ -33,6 +35,37 @@ def test_lstm(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout,
 
 
 @given(**hyper)
+def test_lstm_reduce(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout):
+    if num_layers == 1:
+        dropout = 0
+
+    rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
+               batch_first=True, dropout=dropout, bidirectional=True)
+
+    inputs = torch.rand(batch, seqlen, input_size)
+    outputs = rnn.reduce(inputs)
+
+    assert outputs.size() == (batch, hidden_size * 2)
+
+
+@given(**hyper)
+def test_lstm_transduce(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout):
+    if num_layers == 1:
+        dropout = 0
+
+    rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
+               batch_first=True, dropout=dropout, bidirectional=True)
+
+    inputs = torch.rand(batch, seqlen, input_size)
+    outputs = rnn.transduce(inputs)
+
+    assert outputs.size() == (batch, seqlen, hidden_size * 2)
+
+
+@given(
+    **hyper,
+    bidirectional=st.booleans(),
+)
 def test_lstm_with_hx(seqlen, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0

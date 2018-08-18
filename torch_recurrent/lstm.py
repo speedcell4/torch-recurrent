@@ -18,14 +18,14 @@ class LSTM(nn.LSTM):
             bias=bias, batch_first=batch_first, dropout=dropout, bidirectional=bidirectional,
         )
 
-        num_directions = 2 if bidirectional else 1
-        self.h0 = nn.Parameter(torch.Tensor(num_layers * num_directions, 1, hidden_size))
-        self.c0 = nn.Parameter(torch.Tensor(num_layers * num_directions, 1, hidden_size))
+        self.num_directions = 2 if bidirectional else 1
+        self.h0 = nn.Parameter(torch.Tensor(num_layers * self.num_directions, 1, hidden_size))
+        self.c0 = nn.Parameter(torch.Tensor(num_layers * self.num_directions, 1, hidden_size))
 
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        return keras_lstm_(self)
+        keras_lstm_(self)
 
     def hx(self, batch_size: int) -> HX:
         h0 = self.h0.expand(-1, batch_size, -1)
@@ -36,3 +36,14 @@ class LSTM(nn.LSTM):
         if hx is None:
             hx = self.hx(input.size(0))
         return super(LSTM, self).forward(input, hx)
+
+    def reduce(self, input: torch.Tensor) -> torch.Tensor:
+        assert self.bidirectional
+        output, _ = self.__call__(input, None)
+        output = output.view(input.size(0), -1, self.num_directions, self.hidden_size)
+        return torch.cat([output[:, -1, 0, :], output[:, 0, -1, :]], dim=-1)
+
+    def transduce(self, input: torch.Tensor) -> torch.Tensor:
+        assert self.bidirectional
+        output, _ = self.__call__(input, None)
+        return output
