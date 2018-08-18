@@ -3,6 +3,7 @@ from typing import Callable, Tuple
 import torch
 from torch.nn import init
 from torch import nn
+from torch_recurrent import keras_lstm_
 
 HX = Tuple[torch.Tensor, torch.Tensor]
 
@@ -33,20 +34,7 @@ class LSTMCell(nn.LSTMCell):
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
-        std = (6.0 / self.hidden_size) ** 0.5
-        with torch.no_grad():
-            init.xavier_uniform_(self.weight_ih)
-            init.orthogonal_(self.weight_hh)
-            if getattr(self, 'bias_ih', None) is not None:
-                init.constant_(self.bias_ih, 0.)
-                self.bias_ih[self.hidden_size:self.hidden_size * 2] = 0.5
-            if getattr(self, 'bias_hh', None) is not None:
-                init.constant_(self.bias_hh, 0.)
-                self.bias_hh[self.hidden_size:self.hidden_size * 2] = 0.5
-            if getattr(self, 'h0', None) is not None:
-                init.uniform_(self.h0, -std, +std)
-            if getattr(self, 'c0', None) is not None:
-                init.uniform_(self.c0, -std, +std)
+        return keras_lstm_(self)
 
     def hx(self, batch_size: int) -> HX:
         h0 = self.h0.expand(batch_size, -1)
