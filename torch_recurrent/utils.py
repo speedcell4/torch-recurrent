@@ -1,14 +1,12 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import torch
 from torch.nn import init
 from torch import nn
-from torch.nn.utils.rnn import pack_sequence
+from torch.nn.utils.rnn import PackedSequence, pack_sequence
 
 
 def keras_lstm_(module: Union[nn.LSTM, nn.LSTMCell]) -> None:
-    std = (6.0 / module.hidden_size) ** 0.5
-
     for name, param in module.named_parameters():  # type: str, nn.Parameter
         with torch.no_grad():
             if name.startswith('weight_hh'):
@@ -19,21 +17,21 @@ def keras_lstm_(module: Union[nn.LSTM, nn.LSTMCell]) -> None:
                 init.constant_(param, 0.)
                 param[module.hidden_size:module.hidden_size * 2] = 0.5
             if name == 'h0':
-                init.uniform_(param, -std, +std)
+                init.xavier_uniform_(param)
             if name == 'c0':
-                init.uniform_(param, -std, +std)
+                init.xavier_uniform_(param)
 
 
-def unsorted_pack_sequence(sequences: List, dtype=torch.long, device=torch.device('cpu')):
+def unsorted_pack_sequence(
+        sequences: List, dtype=torch.long, device=torch.device('cpu')) -> Tuple[PackedSequence, torch.Tensor]:
     sequences = [
         seq if torch.is_tensor(seq) else torch.tensor(seq, dtype=dtype, device=device)
         for seq in sequences
     ]
     idx = list(range(len(sequences)))
     idx = sorted(idx, key=lambda item: sequences[item].size(0), reverse=True)
-    inv = [0] * len(sequences)
+    inv = [None] * len(sequences)
     for x, y in enumerate(idx):
         inv[y] = x
-    return pack_sequence([sequences[ix] for ix in idx]), torch.tensor(inv, dtype=dtype, device=device)
-
-
+    sequences = pack_sequence([sequences[ix] for ix in idx])
+    return sequences, torch.tensor(inv, dtype=torch.long, device=device)
