@@ -1,8 +1,8 @@
 from typing import Tuple, Union
 
-from torch.nn.utils.rnn import PackedSequence
 import torch
 from torch import nn
+from torch.nn.utils.rnn import PackedSequence
 
 from torch_recurrent import keras_lstm_
 
@@ -37,15 +37,20 @@ class LSTM(nn.LSTM):
 
     def forward(self, input: IO, hx: HX = None) -> Tuple[IO, HX]:
         if hx is None:
-            hx = self.hx(input.size(0))
+            if isinstance(input, PackedSequence):
+                batch_size = input.batch_sizes[0].item()
+            else:
+                batch_size = input.size(0)
+            hx = self.hx(batch_size)
         return super(LSTM, self).forward(input, hx)
 
-    def reduce(self, input: IO) -> IO:
-        output, _ = self.__call__(input, None)
-        output = output.view(input.size(0), -1, self.num_directions, self.hidden_size)
+    def reduce(self, input: IO) -> torch.Tensor:
+        _, (output, _) = self.__call__(input, None)
+        output = output.view(self.num_layers, self.num_directions, -1, self.hidden_size)
+
         if self.num_directions == 1:
-            return output[:, -1, 0, :]
-        return torch.cat([output[:, -1, 0, :], output[:, 0, -1, :]], dim=-1)
+            return output[-1, 0, :, :]
+        return torch.cat([output[-1, 0, :, :], output[-1, 1, :, :]], dim=-1)
 
     def transduce(self, input: IO) -> IO:
         output, _ = self.__call__(input, None)
