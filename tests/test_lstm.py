@@ -15,21 +15,28 @@ from torch_recurrent import LSTM
     num_layers=NUM_LAYERS,
     dropout=DROPOUT,
     bidirectional=BIDIRECTIONAL,
+    batch_first=BATCH_FIRST,
 )
-def test_lstm_with_hx(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm_with_hx(seq_len, batch, input_size, hidden_size, bias, num_layers, batch_first, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
     num_directions = 2 if bidirectional else 1
 
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
-               batch_first=True, dropout=dropout, bidirectional=bidirectional)
+               batch_first=batch_first, dropout=dropout, bidirectional=bidirectional)
 
-    inputs = torch.rand(batch, seq_len, input_size)
+    if batch_first:
+        inputs = torch.rand(batch, seq_len, input_size)
+    else:
+        inputs = torch.rand(seq_len, batch, input_size)
     h_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
     c_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
     outputs, (h_n, c_n) = rnn(inputs, (h_0, c_0))
 
-    assert outputs.size() == (batch, seq_len, rnn.output_dim)
+    if batch_first:
+        assert outputs.size() == (batch, seq_len, rnn.output_dim)
+    else:
+        assert outputs.size() == (seq_len, batch, rnn.output_dim)
     assert h_n.size() == (num_layers * num_directions, batch, hidden_size)
     assert c_n.size() == (num_layers * num_directions, batch, hidden_size)
 
@@ -43,19 +50,26 @@ def test_lstm_with_hx(seq_len, batch, input_size, hidden_size, bias, num_layers,
     num_layers=NUM_LAYERS,
     dropout=DROPOUT,
     bidirectional=BIDIRECTIONAL,
+    batch_first=BATCH_FIRST,
 )
-def test_lstm(seq_len, batch, input_size, hidden_size, bias, num_layers, dropout, bidirectional):
+def test_lstm(seq_len, batch, input_size, hidden_size, bias, num_layers, batch_first, dropout, bidirectional):
     if num_layers == 1:
         dropout = 0
     num_directions = 2 if bidirectional else 1
 
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
-               batch_first=True, dropout=dropout, bidirectional=bidirectional)
+               batch_first=batch_first, dropout=dropout, bidirectional=bidirectional)
 
-    inputs = torch.rand(batch, seq_len, input_size)
+    if batch_first:
+        inputs = torch.rand(batch, seq_len, input_size)
+    else:
+        inputs = torch.rand(seq_len, batch, input_size)
     outputs, (h_n, c_n) = rnn(inputs)
 
-    assert outputs.size() == (batch, seq_len, rnn.output_dim)
+    if batch_first:
+        assert outputs.size() == (batch, seq_len, rnn.output_dim)
+    else:
+        assert outputs.size() == (seq_len, batch, rnn.output_dim)
     assert h_n.size() == (num_layers * num_directions, batch, hidden_size)
     assert c_n.size() == (num_layers * num_directions, batch, hidden_size)
 

@@ -12,6 +12,7 @@ HIDDEN_SIZE = st.integers(20, 50)
 BIAS = st.booleans()
 DROPOUT = st.floats(0., 1.)
 
+BATCH_FIRST = st.booleans()
 BIDIRECTIONAL = st.booleans()
 
 SEQ_LEN = st.integers(1, max_len)
