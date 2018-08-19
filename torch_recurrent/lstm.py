@@ -10,8 +10,6 @@ IO = Union[torch.Tensor, PackedSequence]
 HX = Tuple[torch.Tensor, torch.Tensor]
 
 
-# TODO batch_first
-# TODO PackedSequence
 class LSTM(nn.LSTM):
     def __init__(self, input_size: int, hidden_size: int, num_layers: int = 1, bias: bool = False,
                  batch_first: bool = True, dropout: float = 0, bidirectional: bool = False) -> None:
@@ -39,8 +37,10 @@ class LSTM(nn.LSTM):
         if hx is None:
             if isinstance(input, PackedSequence):
                 batch_size = input.batch_sizes[0].item()
-            else:
+            elif self.batch_first:
                 batch_size = input.size(0)
+            else:
+                batch_size = input.size(1)
             hx = self.hx(batch_size)
         return super(LSTM, self).forward(input, hx)
 
