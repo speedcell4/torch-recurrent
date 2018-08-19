@@ -22,8 +22,8 @@ def keras_lstm_(module: Union[nn.LSTM, nn.LSTMCell]) -> None:
                 init.xavier_uniform_(param)
 
 
-def unsorted_pack_sequence(
-        sequences: List, dtype=torch.long, device=torch.device('cpu')) -> Tuple[PackedSequence, torch.Tensor]:
+def unsorted_pack_sequence(sequences: List, dtype=torch.long,
+                           device=torch.device('cpu')) -> Tuple[PackedSequence, torch.Tensor]:
     sequences = [
         seq if torch.is_tensor(seq) else torch.tensor(seq, dtype=dtype, device=device)
         for seq in sequences
@@ -31,7 +31,7 @@ def unsorted_pack_sequence(
     idx = list(range(len(sequences)))
     idx = sorted(idx, key=lambda item: sequences[item].size(0), reverse=True)
     inv = [None] * len(sequences)
-    for x, y in enumerate(idx):
+    for x, y in enumerate(idx):  # type:int, int
         inv[y] = x
     sequences = pack_sequence([sequences[ix] for ix in idx])
     return sequences, torch.tensor(inv, dtype=torch.long, device=device)

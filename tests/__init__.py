@@ -1,8 +1,9 @@
 from hypothesis import strategies as st
 
-BATCH = st.integers(1, 20)
-SEQ_LEN = st.integers(1, 50)
+max_batch = 20
+max_len = 50
 
+BATCH = st.integers(1, max_batch)
 NUM_LAYERS = st.integers(1, 3)
 
 INPUT_SIZE = st.integers(20, 50)
@@ -13,9 +14,10 @@ DROPOUT = st.floats(0., 1.)
 
 BIDIRECTIONAL = st.booleans()
 
-SEQ_LENS = st.lists(SEQ_LEN, min_size=1, max_size=20)
+SEQ_LEN = st.integers(1, max_len)
+SEQ_LENS = st.lists(SEQ_LEN, min_size=1, max_size=max_batch)
 SORTED_SEQ_LENS = SEQ_LENS.map(sorted).map(reversed).map(list)
 
-WORD = st.integers(0, 1200)
-SEQUENCE = st.lists(WORD, min_size=1, max_size=50)
-SEQUENCES = st.lists(SEQUENCE, min_size=1, max_size=20)
+VOCAB = st.integers(0, 1200)
+SEQUENCE = st.lists(VOCAB, min_size=1, max_size=max_len)
+SEQUENCES = st.lists(SEQUENCE, min_size=1, max_size=max_batch)
