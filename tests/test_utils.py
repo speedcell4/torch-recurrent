@@ -2,7 +2,7 @@ from hypothesis import given
 from torch.nn.utils.rnn import pad_packed_sequence
 
 from tests import SEQUENCES
-from torch_recurrent.utils import unsorted_pack_sequence
+from torch_recurrent import unsorted_pack_sequence
 
 
 @given(
