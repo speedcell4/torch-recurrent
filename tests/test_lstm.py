@@ -3,7 +3,7 @@ import torch
 from torch.nn.utils.rnn import pack_sequence
 
 from tests import *
-from torch_recurrent import LSTM
+from torch_recurrent import LSTM, device
 
 
 @given(
@@ -31,6 +31,12 @@ def test_lstm_with_hx(seq_len, batch, input_size, hidden_size, bias, num_layers,
         inputs = torch.rand(seq_len, batch, input_size)
     h_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
     c_0 = torch.rand(num_layers * num_directions, batch, hidden_size)
+
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+    h_0 = h_0.to(device)
+    c_0 = c_0.to(device)
+
     outputs, (h_n, c_n) = rnn(inputs, (h_0, c_0))
 
     if batch_first:
@@ -64,6 +70,10 @@ def test_lstm(seq_len, batch, input_size, hidden_size, bias, num_layers, batch_f
         inputs = torch.rand(batch, seq_len, input_size)
     else:
         inputs = torch.rand(seq_len, batch, input_size)
+
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+
     outputs, (h_n, c_n) = rnn(inputs)
 
     if batch_first:
@@ -92,6 +102,10 @@ def test_lstm_reduce_with_pack(
     rnn = LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, bias=bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
     inputs = pack_sequence([torch.rand(seq_len, input_size) for seq_len in seq_lens])
+
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+
     outputs = rnn.reduce(inputs)
 
     assert outputs.size() == (batch, rnn.output_dim)
@@ -115,6 +129,9 @@ def test_lstm_reduce(seq_len, batch, input_size, hidden_size, bias, num_layers, 
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
     inputs = torch.rand(batch, seq_len, input_size)
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+
     outputs = rnn.reduce(inputs)
 
     assert outputs.size() == (batch, rnn.output_dim)
@@ -138,6 +155,9 @@ def test_lstm_transduce_with_pack(seq_len, batch, input_size, hidden_size, bias,
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
     inputs = torch.rand(batch, seq_len, input_size)
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+
     outputs = rnn.transduce(inputs)
 
     assert outputs.size() == (batch, seq_len, rnn.output_dim)
@@ -161,6 +181,9 @@ def test_lstm_transduce(seq_len, batch, input_size, hidden_size, bias, num_layer
                batch_first=True, dropout=dropout, bidirectional=bidirectional)
 
     inputs = torch.rand(batch, seq_len, input_size)
+    rnn = rnn.to(device)
+    inputs = inputs.to(device)
+
     outputs = rnn.transduce(inputs)
 
     assert outputs.size() == (batch, seq_len, rnn.output_dim)
