@@ -5,7 +5,7 @@ with open('README.md', mode='r', encoding='utf-8') as fd:
 
 setup(
     name='torch-recurrent',
-    version='0.1.1',
+    version='0.1.2',
     packages=['torch_recurrent'],
     install_requires=['torch'],
     url='https://github.com/speedcell4/torch-recurrent',
