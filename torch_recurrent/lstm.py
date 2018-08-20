@@ -29,8 +29,8 @@ class LSTM(nn.LSTM):
         keras_lstm_(self)
 
     def hx(self, batch_size: int) -> HX:
-        h0 = self.h0.expand(-1, batch_size, -1)
-        c0 = self.c0.expand(-1, batch_size, -1)
+        h0 = self.h0.expand(-1, batch_size, -1).contiguous()
+        c0 = self.c0.expand(-1, batch_size, -1).contiguous()
         return h0, c0
 
     def forward(self, input: IO, hx: HX = None) -> Tuple[IO, HX]:
